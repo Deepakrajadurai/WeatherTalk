@@ -19,5 +19,19 @@
         android:layout_width="250dp"
         android:layout_height="wrap_content"
         android:max="30"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Snooze Duration"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp" />
+
+    <Spinner
+        android:id="@+id/spinnerSnooze"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/snooze_options"
+        android:layout_marginBottom="16dp"/>
+
 
 </LinearLayout>

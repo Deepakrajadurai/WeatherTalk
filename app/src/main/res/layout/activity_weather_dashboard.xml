@@ -1,0 +1,53 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnLine"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="LineChart" />
+
+        <Button
+            android:id="@+id/btnBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BarChart"
+            android:layout_marginStart="8dp" />
+
+        <Button
+            android:id="@+id/btnPie"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="PieChart"
+            android:layout_marginStart="8dp" />
+    </LinearLayout>
+
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/lineChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:visibility="visible" />
+
+    <com.github.mikephil.charting.charts.BarChart
+        android:id="@+id/barChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:visibility="gone" />
+
+    <com.github.mikephil.charting.charts.PieChart
+        android:id="@+id/pieChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:visibility="gone" />
+
+</LinearLayout>

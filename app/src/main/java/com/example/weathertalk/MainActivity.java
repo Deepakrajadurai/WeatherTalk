@@ -16,10 +16,18 @@ import android.hardware.SensorManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
+import android.os.Handler;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.work.PeriodicWorkRequest;
+import androidx.work.WorkManager;
+import androidx.work.ExistingPeriodicWorkPolicy;
+
+import java.util.concurrent.TimeUnit;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
@@ -27,8 +35,8 @@ import com.google.android.gms.location.LocationServices;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     EditText editCity;
-    TextView txtWeather;
-    Button btnWeather, btnDetails, btnOpenChat, btnSettings, btnCityList;
+    TextView txtWeather, txtSnoozeStatus;
+    Button btnWeather, btnDetails, btnOpenChat, btnSettings, btnCityList, btnResumeAlerts;
 
     String lastTemp = "";
     String lastCondition = "";
@@ -41,6 +49,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     SensorManager sensorManager;
     private long lastShakeTime = 0;
 
+    // Snooze
+    private Handler handler = new Handler();
+    private boolean isSnoozed = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,11 +60,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         editCity = findViewById(R.id.editCity);
         txtWeather = findViewById(R.id.txtWeather);
+        txtSnoozeStatus = findViewById(R.id.txtSnoozeStatus);
         btnWeather = findViewById(R.id.btnGetWeather);
         btnDetails = findViewById(R.id.btnDetails);
         btnOpenChat = findViewById(R.id.btnOpenChat);
         btnSettings = findViewById(R.id.btnSettings);
         btnCityList = findViewById(R.id.btnCityList);
+        btnResumeAlerts = findViewById(R.id.btnResumeAlerts);
+        Button btnDashboard;
+
+
+
+        btnDashboard = findViewById(R.id.btnDashboard);
+        btnDashboard.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, WeatherDashboardActivity.class);
+            startActivity(intent);
+        });
 
         // Init GPS
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -64,6 +87,18 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         } else {
             fetchLocationWeather();
         }
+
+        // 🔔 Schedule background weather check every 15 minutes
+        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
+                WeatherWorker.class,
+                15, TimeUnit.MINUTES)
+                .build();
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "WeatherWork",
+                ExistingPeriodicWorkPolicy.REPLACE,
+                request
+        );
 
         // Init Accelerometer
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -124,6 +159,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         btnCityList.setOnClickListener(v -> {
             startActivity(new Intent(MainActivity.this, CityListActivity.class));
         });
+
+        // Resume alerts manually
+        btnResumeAlerts.setOnClickListener(v -> {
+            cancelSnooze();
+            Toast.makeText(MainActivity.this, "Alerts resumed", Toast.LENGTH_SHORT).show();
+        });
     }
 
     // GPS: handle permission
@@ -172,7 +213,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             double acceleration = Math.sqrt(x * x + y * y + z * z) - SensorManager.GRAVITY_EARTH;
 
-            // 🔧 Load threshold from settings
             SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
             int shakeThreshold = prefs.getInt("shake_threshold", 5);
 
@@ -180,11 +220,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             if (acceleration > shakeThreshold) {
                 if (currentTime - lastShakeTime > 2000) {
                     lastShakeTime = currentTime;
-                    Toast.makeText(this, "Shake detected! Refreshing weather...", Toast.LENGTH_SHORT).show();
-                    refreshWeather();
+                    Toast.makeText(this, "Shake detected! Snoozing alerts for 30 minutes...", Toast.LENGTH_SHORT).show();
+                    startSnooze(30 * 60 * 1000); // 30 mins
                 }
             }
         }
+    }
+
+    private void startSnooze(long durationMs) {
+        isSnoozed = true;
+        txtSnoozeStatus.setText("Alerts Snoozed ⏸️");
+        txtSnoozeStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
+        btnResumeAlerts.setVisibility(View.VISIBLE);
+
+        handler.postDelayed(this::cancelSnooze, durationMs);
+    }
+
+    private void cancelSnooze() {
+        isSnoozed = false;
+        txtSnoozeStatus.setText("Alerts Active ✅");
+        txtSnoozeStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
+        btnResumeAlerts.setVisibility(View.GONE);
+
+        handler.removeCallbacksAndMessages(null);
     }
 
     private void refreshWeather() {
@@ -196,7 +254,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 updateWeatherDisplay(weather);
             }
         } else {
-            fetchLocationWeather(); // fallback
+            fetchLocationWeather();
         }
     }
 
@@ -221,7 +279,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    // Helper: update UI
     private void updateWeatherDisplay(String weather) {
         txtWeather.setText(weather);
 
