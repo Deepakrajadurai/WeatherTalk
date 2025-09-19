@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     EditText editCity;
     TextView txtWeather;
-    Button btnWeather, btnDetails, btnOpenChat, btnSettings;
+    Button btnWeather, btnDetails, btnOpenChat, btnSettings, btnCityList;
 
     String lastTemp = "";
     String lastCondition = "";
@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         btnDetails = findViewById(R.id.btnDetails);
         btnOpenChat = findViewById(R.id.btnOpenChat);
         btnSettings = findViewById(R.id.btnSettings);
+        btnCityList = findViewById(R.id.btnCityList);
 
         // Init GPS
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -117,6 +118,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(intent);
+        });
+
+        // Open multiple cities (RecyclerView)
+        btnCityList.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, CityListActivity.class));
         });
     }
 

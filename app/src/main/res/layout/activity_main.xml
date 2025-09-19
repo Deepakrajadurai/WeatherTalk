@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="20dp"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
     tools:context=".MainActivity">
 
     <!-- City input -->
@@ -14,61 +14,69 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:hint="Enter city"
-        android:inputType="text"
+        android:padding="10dp"
+        android:background="@android:drawable/edit_text"
         android:layout_marginBottom="12dp"/>
 
-    <!-- Weather text -->
+    <!-- Weather display -->
     <TextView
         android:id="@+id/txtWeather"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Weather info will appear here"
         android:textSize="16sp"
-        android:padding="8dp"
-        android:layout_marginBottom="20dp"
-        android:background="#EEEEEE"/>
+        android:padding="10dp"
+        android:background="@android:color/darker_gray"
+        android:textColor="@android:color/black"
+        android:layout_marginBottom="20dp" />
 
-    <!-- Buttons row 1 -->
-    <LinearLayout
+    <!-- Get weather button -->
+    <Button
+        android:id="@+id/btnGetWeather"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
+        android:text="Get Weather"
+        android:backgroundTint="@color/purple_500"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp" />
 
-        <Button
-            android:id="@+id/btnGetWeather"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Get Weather"/>
-
-        <Button
-            android:id="@+id/btnDetails"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Details"
-            android:layout_marginStart="10dp"/>
-    </LinearLayout>
-
-    <!-- Buttons row 2 -->
-    <LinearLayout
+    <!-- Details button -->
+    <Button
+        android:id="@+id/btnDetails"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:layout_marginTop="12dp">
+        android:text="Weather Details"
+        android:backgroundTint="@color/teal_700"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp" />
 
-        <Button
-            android:id="@+id/btnOpenChat"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Chatbot"/>
+    <!-- Chatbot button -->
+    <Button
+        android:id="@+id/btnOpenChat"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Open Chatbot"
+        android:backgroundTint="@color/purple_200"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp" />
 
-        <Button
-            android:id="@+id/btnSettings"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Settings"
-            android:layout_marginStart="10dp"/>
-    </LinearLayout>
+    <!-- Settings button -->
+    <Button
+        android:id="@+id/btnSettings"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Settings"
+        android:backgroundTint="@color/black"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp" />
+
+    <!-- City list button (RecyclerView page) -->
+    <Button
+        android:id="@+id/btnCityList"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="View Multiple Cities"
+        android:backgroundTint="@color/design_default_color_primary"
+        android:textColor="@android:color/white" />
 
 </LinearLayout>

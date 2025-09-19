@@ -18,6 +18,8 @@
         <activity android:name=".ChatbotActivity" />
         <activity android:name=".WeatherDetailActivity" />
         <activity android:name=".SettingsActivity" />
+        <activity android:name=".CityListActivity" />
+
 
 
         <!-- Launcher activity -->
