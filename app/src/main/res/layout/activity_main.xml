@@ -1,72 +1,91 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/editCity"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Enter City" />
-
-    <TextView
-        android:id="@+id/txtWeather"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Weather Info"
-        android:padding="8dp" />
-
+    <!--  AI Assistant Button in top-right -->
     <Button
-        android:id="@+id/btnGetWeather"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Get Weather" />
-
-    <Button
-        android:id="@+id/btnDetails"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Weather Details" />
-
-    <Button
-        android:id="@+id/btnOpenChat"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Open Chatbot" />
-
-    <Button
-        android:id="@+id/btnSettings"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Settings" />
-
-    <Button
-        android:id="@+id/btnCityList"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="View Multiple Cities" />
-
-    <!-- ✅ New Dashboard Button -->
-    <Button
-        android:id="@+id/btnDashboard"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="View Dashboard" />
-
-    <TextView
-        android:id="@+id/txtSnoozeStatus"
+        android:id="@+id/btnAiAssistant"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Alerts Active ✅"
-        android:paddingTop="8dp" />
+        android:text=" AI Assistant"
+        android:layout_alignParentEnd="true"
+        android:layout_marginBottom="8dp"
+        android:layout_marginTop="8dp" />
 
-    <Button
-        android:id="@+id/btnResumeAlerts"
+    <!-- Main Content under AI Assistant -->
+    <LinearLayout
+        android:id="@+id/mainContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Resume Alerts"
-        android:visibility="gone" />
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:layout_below="@id/btnAiAssistant"
+        android:paddingTop="8dp">
 
-</LinearLayout>
+        <EditText
+            android:id="@+id/editCity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter City" />
+
+        <TextView
+            android:id="@+id/txtWeather"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Weather Info"
+            android:padding="8dp"
+            android:textSize="16sp" />
+
+        <Button
+            android:id="@+id/btnGetWeather"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Get Weather" />
+
+        <Button
+            android:id="@+id/btnDetails"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Weather Details" />
+
+        <Button
+            android:id="@+id/btnOpenChat"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Open Chatbot" />
+
+        <Button
+            android:id="@+id/btnSettings"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Settings" />
+
+        <Button
+            android:id="@+id/btnCityList"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View Multiple Cities" />
+
+        <Button
+            android:id="@+id/btnDashboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="View Dashboard" />
+
+        <TextView
+            android:id="@+id/txtSnoozeStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Alerts Active ✅"
+            android:paddingTop="8dp" />
+
+        <Button
+            android:id="@+id/btnResumeAlerts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Resume Alerts"
+            android:visibility="gone" />
+    </LinearLayout>
+</RelativeLayout>

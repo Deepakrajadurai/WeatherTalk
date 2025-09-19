@@ -1,58 +1,40 @@
 package com.example.weathertalk;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-
 import android.Manifest;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Handler;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.work.PeriodicWorkRequest;
-import androidx.work.WorkManager;
-import androidx.work.ExistingPeriodicWorkPolicy;
-
-import java.util.concurrent.TimeUnit;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 
-public class MainActivity extends AppCompatActivity implements SensorEventListener {
+import org.json.JSONObject;
 
-    EditText editCity;
-    TextView txtWeather, txtSnoozeStatus;
-    Button btnWeather, btnDetails, btnOpenChat, btnSettings, btnCityList, btnResumeAlerts;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
-    String lastTemp = "";
-    String lastCondition = "";
+public class MainActivity extends AppCompatActivity {
 
+    private EditText editCity;
+    private TextView txtWeather;
+    private Button btnGetWeather, btnDetails, btnOpenChat, btnSettings, btnCityList, btnDashboard, btnAiAssistant;
 
-    // GPS
-    private static final int LOCATION_REQUEST_CODE = 1001;
-    FusedLocationProviderClient fusedLocationClient;
+    private FusedLocationProviderClient fusedLocationClient;
 
-    // Accelerometer
-    SensorManager sensorManager;
-    private long lastShakeTime = 0;
-
-    // Snooze
-    private Handler handler = new Handler();
-    private boolean isSnoozed = false;
+    private String lastTemp = "";
+    private String lastCondition = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,247 +43,182 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         editCity = findViewById(R.id.editCity);
         txtWeather = findViewById(R.id.txtWeather);
-        txtSnoozeStatus = findViewById(R.id.txtSnoozeStatus);
-        btnWeather = findViewById(R.id.btnGetWeather);
+        btnGetWeather = findViewById(R.id.btnGetWeather);
         btnDetails = findViewById(R.id.btnDetails);
         btnOpenChat = findViewById(R.id.btnOpenChat);
         btnSettings = findViewById(R.id.btnSettings);
         btnCityList = findViewById(R.id.btnCityList);
-        btnResumeAlerts = findViewById(R.id.btnResumeAlerts);
-        Button btnDashboard;
-
-
-
         btnDashboard = findViewById(R.id.btnDashboard);
-        btnDashboard.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, WeatherDashboardActivity.class);
-            startActivity(intent);
-        });
+        btnAiAssistant = findViewById(R.id.btnAiAssistant);
 
-        // Init GPS
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
-                    LOCATION_REQUEST_CODE);
-        } else {
-            fetchLocationWeather();
-        }
 
-        // 🔔 Schedule background weather check every 15 minutes
-        PeriodicWorkRequest request = new PeriodicWorkRequest.Builder(
-                WeatherWorker.class,
-                15, TimeUnit.MINUTES)
-                .build();
-
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-                "WeatherWork",
-                ExistingPeriodicWorkPolicy.REPLACE,
-                request
-        );
-
-
-        // Init Accelerometer
-        sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) == null) {
-            Toast.makeText(this, "No accelerometer found!", Toast.LENGTH_SHORT).show();
-        }
-
-        // Fetch weather manually
-        btnWeather.setOnClickListener(v -> {
+        // Get weather by city
+        btnGetWeather.setOnClickListener(v -> {
             String city = editCity.getText().toString().trim();
-
-            if (city.isEmpty()) {
-                Toast.makeText(MainActivity.this, "Please enter a city", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            if (!isInternetAvailable()) {
-                Toast.makeText(MainActivity.this, "No internet connection", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            double[] coords = WeatherApiClient.getCoordsFromCity(city);
-
-            if (coords != null) {
-                String weather = WeatherApiClient.getWeather(coords[0], coords[1]);
-                updateWeatherDisplay(weather);
+            if (!city.isEmpty()) {
+                new FetchWeatherTask(city).execute();
             } else {
-                txtWeather.setText("Could not find city: " + city);
+                Toast.makeText(this, "Enter a city name", Toast.LENGTH_SHORT).show();
             }
         });
 
         // Go to details
         btnDetails.setOnClickListener(v -> {
-            if (lastTemp.isEmpty() || lastCondition.isEmpty()) {
-                Toast.makeText(MainActivity.this, "Fetch weather first!", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            Intent intent = new Intent(MainActivity.this, DashboardActivity.class);
+            Intent intent = new Intent(MainActivity.this, WeatherDetailActivity.class);
             intent.putExtra("temp", lastTemp);
             intent.putExtra("condition", lastCondition);
             startActivity(intent);
         });
 
-        // Go to chatbot
+        // Chatbot
         btnOpenChat.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ChatbotActivity.class);
             startActivity(intent);
         });
 
-        // Open settings
+        // Settings
         btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(intent);
         });
 
-        // Open multiple cities (RecyclerView)
+        // Multiple cities
         btnCityList.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, CityListActivity.class));
+            Intent intent = new Intent(MainActivity.this, CityListActivity.class);
+            startActivity(intent);
         });
 
-        // Resume alerts manually
-        btnResumeAlerts.setOnClickListener(v -> {
-            cancelSnooze();
-            Toast.makeText(MainActivity.this, "Alerts resumed", Toast.LENGTH_SHORT).show();
+        // Dashboard
+        btnDashboard.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, WeatherDashboardActivity.class);
+            startActivity(intent);
         });
+
+        // 🤖 AI Assistant (uses GPS)
+        btnAiAssistant.setOnClickListener(v -> checkLocationPermission());
     }
 
-    // GPS: handle permission
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-        if (requestCode == LOCATION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                fetchLocationWeather();
-            } else {
-                txtWeather.setText("Location permission denied. Please enter a city manually.");
-            }
+    // --- Location ---
+    private void checkLocationPermission() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, 1);
+        } else {
+            getUserLocation();
         }
     }
 
-    // GPS: fetch location weather
-    private void fetchLocationWeather() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-
+    private void getUserLocation() {
         fusedLocationClient.getLastLocation().addOnSuccessListener(this, location -> {
             if (location != null) {
-                double lat = location.getLatitude();
-                double lon = location.getLongitude();
-
-                String weather = WeatherApiClient.getWeather(lat, lon);
-                txtWeather.setText("Current Location\n" + weather);
-                updateWeatherDisplay(weather);
+                fetchWeatherForLocation(location);
             } else {
-                txtWeather.setText("Unable to detect location.");
+                Toast.makeText(this, "Unable to get location", Toast.LENGTH_SHORT).show();
             }
         });
     }
 
-    // Accelerometer: detect shake
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            float x = event.values[0];
-            float y = event.values[1];
-            float z = event.values[2];
+    private void fetchWeatherForLocation(Location location) {
+        double lat = location.getLatitude();
+        double lon = location.getLongitude();
+        new FetchWeatherTask(lat, lon).execute();
+    }
 
-            double acceleration = Math.sqrt(x * x + y * y + z * z) - SensorManager.GRAVITY_EARTH;
+    // --- Weather Fetch ---
+    private class FetchWeatherTask extends AsyncTask<Void, Void, String> {
+        private String cityName;
+        private Double lat, lon;
 
-            SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
-            int shakeThreshold = prefs.getInt("shake_threshold", 5);
+        // City-based constructor
+        FetchWeatherTask(String cityName) {
+            this.cityName = cityName;
+        }
 
-            long currentTime = System.currentTimeMillis();
-            if (acceleration > shakeThreshold) {
-                if (currentTime - lastShakeTime > 2000) {
-                    lastShakeTime = currentTime;
-                    Toast.makeText(this, "Shake detected! Snoozing alerts for 30 minutes...", Toast.LENGTH_SHORT).show();
-                    startSnooze(30 * 60 * 1000); // 30 mins
+        // Lat/Lon constructor
+        FetchWeatherTask(Double lat, Double lon) {
+            this.lat = lat;
+            this.lon = lon;
+        }
+
+        @Override
+        protected String doInBackground(Void... voids) {
+            try {
+                String urlStr;
+                if (cityName != null) {
+                    urlStr = "https://geocoding-api.open-meteo.com/v1/search?name=" + cityName + "&count=1";
+                    URL url = new URL(urlStr);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    reader.close();
+
+                    JSONObject obj = new JSONObject(sb.toString());
+                    JSONObject first = obj.getJSONArray("results").getJSONObject(0);
+                    lat = first.getDouble("latitude");
+                    lon = first.getDouble("longitude");
+                }
+
+                // Weather API call
+                urlStr = "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
+                        "&longitude=" + lon +
+                        "&current_weather=true";
+                URL url = new URL(urlStr);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                reader.close();
+                return sb.toString();
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            if (result != null) {
+                try {
+                    JSONObject obj = new JSONObject(result);
+                    JSONObject current = obj.getJSONObject("current_weather");
+                    String temp = current.getString("temperature");
+                    String wind = current.getString("windspeed");
+
+                    lastTemp = temp;
+                    lastCondition = "Wind: " + wind + " km/h";
+
+                    txtWeather.setText("Temp: " + temp + "°C\nWind: " + wind + " km/h");
+
+                    // 🤖 AI Assistant logic: suggest activity
+                    if (lat != null && lon != null && cityName == null) {
+                        String suggestion;
+                        double t = Double.parseDouble(temp);
+                        double w = Double.parseDouble(wind);
+                        if (t >= 15 && t <= 25 && w < 10) {
+                            suggestion = "Perfect for camping ⛺ or trucking 🚚!";
+                        } else if (t > 30) {
+                            suggestion = "Too hot ☀️ — better to stay indoors.";
+                        } else if (w > 20) {
+                            suggestion = "Windy 🌬️ — not great for outdoor activities.";
+                        } else {
+                            suggestion = "Good weather for a walk 🚶.";
+                        }
+
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("AI Assistant")
+                                .setMessage(suggestion)
+                                .setPositiveButton("OK", null)
+                                .show();
+                    }
+
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
         }
-    }
-
-    private void startSnooze(long durationMs) {
-        isSnoozed = true;
-        txtSnoozeStatus.setText("Alerts Snoozed ⏸️");
-        txtSnoozeStatus.setTextColor(getResources().getColor(android.R.color.holo_red_dark));
-        btnResumeAlerts.setVisibility(View.VISIBLE);
-
-        handler.postDelayed(this::cancelSnooze, durationMs);
-    }
-
-    private void cancelSnooze() {
-        isSnoozed = false;
-        txtSnoozeStatus.setText("Alerts Active ✅");
-        txtSnoozeStatus.setTextColor(getResources().getColor(android.R.color.holo_green_dark));
-        btnResumeAlerts.setVisibility(View.GONE);
-
-        handler.removeCallbacksAndMessages(null);
-    }
-
-    private void refreshWeather() {
-        String city = editCity.getText().toString().trim();
-        if (!city.isEmpty()) {
-            double[] coords = WeatherApiClient.getCoordsFromCity(city);
-            if (coords != null) {
-                String weather = WeatherApiClient.getWeather(coords[0], coords[1]);
-                updateWeatherDisplay(weather);
-            }
-        } else {
-            fetchLocationWeather();
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {}
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (sensorManager != null) {
-            sensorManager.registerListener(this,
-                    sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-                    SensorManager.SENSOR_DELAY_NORMAL);
-        }
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        if (sensorManager != null) {
-            sensorManager.unregisterListener(this);
-        }
-    }
-
-    private void updateWeatherDisplay(String weather) {
-        txtWeather.setText(weather);
-
-        if (weather.contains("Temp:")) {
-            try {
-                String[] parts = weather.split("\n");
-                lastTemp = parts[0].replace("Temp:", "").replace("°C", "").trim();
-                lastCondition = parts[1].replace("Condition:", "").trim();
-            } catch (Exception e) {
-                lastTemp = "";
-                lastCondition = "";
-            }
-        }
-    }
-
-    private boolean isInternetAvailable() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm != null) {
-            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-            return activeNetwork != null && activeNetwork.isConnected();
-        }
-        return false;
     }
 }
