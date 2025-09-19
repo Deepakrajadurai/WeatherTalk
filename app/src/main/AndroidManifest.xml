@@ -17,6 +17,8 @@
 
         <activity android:name=".ChatbotActivity" />
         <activity android:name=".WeatherDetailActivity" />
+        <activity android:name=".SettingsActivity" />
+
 
         <!-- Launcher activity -->
         <activity

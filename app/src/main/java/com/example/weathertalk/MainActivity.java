@@ -3,15 +3,16 @@ package com.example.weathertalk;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Location;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
@@ -24,9 +25,10 @@ import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
+
     EditText editCity;
     TextView txtWeather;
-    Button btnWeather, btnDetails, btnOpenChat;
+    Button btnWeather, btnDetails, btnOpenChat, btnSettings;
 
     String lastTemp = "";
     String lastCondition = "";
@@ -49,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         btnWeather = findViewById(R.id.btnGetWeather);
         btnDetails = findViewById(R.id.btnDetails);
         btnOpenChat = findViewById(R.id.btnOpenChat);
+        btnSettings = findViewById(R.id.btnSettings);
 
         // Init GPS
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
@@ -67,7 +70,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Toast.makeText(this, "No accelerometer found!", Toast.LENGTH_SHORT).show();
         }
 
-        // Fetch weather manually by city
+        // Fetch weather manually
         btnWeather.setOnClickListener(v -> {
             String city = editCity.getText().toString().trim();
 
@@ -91,7 +94,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
-        // Go to details activity
+        // Go to details
         btnDetails.setOnClickListener(v -> {
             if (lastTemp.isEmpty() || lastCondition.isEmpty()) {
                 Toast.makeText(MainActivity.this, "Fetch weather first!", Toast.LENGTH_SHORT).show();
@@ -109,9 +112,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             Intent intent = new Intent(MainActivity.this, ChatbotActivity.class);
             startActivity(intent);
         });
+
+        // Open settings
+        btnSettings.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
     }
 
-    // GPS: Handle permission result
+    // GPS: handle permission
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
@@ -126,7 +135,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    // GPS: Fetch weather from current location
+    // GPS: fetch location weather
     private void fetchLocationWeather() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -157,27 +166,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
             double acceleration = Math.sqrt(x * x + y * y + z * z) - SensorManager.GRAVITY_EARTH;
 
+            // 🔧 Load threshold from settings
+            SharedPreferences prefs = getSharedPreferences("AppSettings", MODE_PRIVATE);
+            int shakeThreshold = prefs.getInt("shake_threshold", 5);
+
             long currentTime = System.currentTimeMillis();
-            if (acceleration > 5) { // shake threshold
-                if (currentTime - lastShakeTime > 2000) { // prevent spam
+            if (acceleration > shakeThreshold) {
+                if (currentTime - lastShakeTime > 2000) {
                     lastShakeTime = currentTime;
                     Toast.makeText(this, "Shake detected! Refreshing weather...", Toast.LENGTH_SHORT).show();
-
-                    if (!lastTemp.isEmpty() && !lastCondition.isEmpty()) {
-                        // Re-fetch same city weather
-                        String city = editCity.getText().toString().trim();
-                        if (!city.isEmpty()) {
-                            double[] coords = WeatherApiClient.getCoordsFromCity(city);
-                            if (coords != null) {
-                                String weather = WeatherApiClient.getWeather(coords[0], coords[1]);
-                                updateWeatherDisplay(weather);
-                            }
-                        } else {
-                            fetchLocationWeather(); // fallback to GPS if no city entered
-                        }
-                    }
+                    refreshWeather();
                 }
             }
+        }
+    }
+
+    private void refreshWeather() {
+        String city = editCity.getText().toString().trim();
+        if (!city.isEmpty()) {
+            double[] coords = WeatherApiClient.getCoordsFromCity(city);
+            if (coords != null) {
+                String weather = WeatherApiClient.getWeather(coords[0], coords[1]);
+                updateWeatherDisplay(weather);
+            }
+        } else {
+            fetchLocationWeather(); // fallback
         }
     }
 
@@ -202,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    // Helper: update weather text and store last values
+    // Helper: update UI
     private void updateWeatherDisplay(String weather) {
         txtWeather.setText(weather);
 
@@ -218,7 +231,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
-    // Utility: check internet connectivity
     private boolean isInternetAvailable() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm != null) {
