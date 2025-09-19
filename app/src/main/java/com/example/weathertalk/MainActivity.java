@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     String lastTemp = "";
     String lastCondition = "";
 
+
     // GPS
     private static final int LOCATION_REQUEST_CODE = 1001;
     FusedLocationProviderClient fusedLocationClient;
@@ -100,6 +101,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 request
         );
 
+
         // Init Accelerometer
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         if (sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) == null) {
@@ -137,7 +139,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 return;
             }
 
-            Intent intent = new Intent(MainActivity.this, WeatherDetailActivity.class);
+            Intent intent = new Intent(MainActivity.this, DashboardActivity.class);
             intent.putExtra("temp", lastTemp);
             intent.putExtra("condition", lastCondition);
             startActivity(intent);

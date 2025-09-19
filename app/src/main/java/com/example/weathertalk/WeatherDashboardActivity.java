@@ -4,8 +4,10 @@ import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -39,7 +41,8 @@ public class WeatherDashboardActivity extends AppCompatActivity {
     private BarChart barChart;
     private PieChart pieChart;
 
-    private Button btnLine, btnBar, btnPie;
+    private Button btnLine, btnBar, btnPie, btnAddCity;
+    private EditText editCityInput;
 
     // Dynamic forecast data
     private float[] city1Temps = new float[7];
@@ -64,11 +67,14 @@ public class WeatherDashboardActivity extends AppCompatActivity {
         btnLine = findViewById(R.id.btnLine);
         btnBar = findViewById(R.id.btnBar);
         btnPie = findViewById(R.id.btnPie);
+        btnAddCity = findViewById(R.id.btnAddCity);
+        editCityInput = findViewById(R.id.editCityInput);
 
-        // Load real forecast
+        // Load real forecast for Berlin + London
         new FetchForecastTask(city1Lat, city1Lon, true).execute();
         new FetchForecastTask(city2Lat, city2Lon, false).execute();
 
+        // Chart switching
         btnLine.setOnClickListener(v -> showChart(lineChart));
         btnBar.setOnClickListener(v -> {
             loadBarData();
@@ -77,6 +83,37 @@ public class WeatherDashboardActivity extends AppCompatActivity {
         btnPie.setOnClickListener(v -> {
             loadPieData();
             showChart(pieChart);
+        });
+
+        // ➕ Add City (mock data for now)
+        btnAddCity.setOnClickListener(v -> {
+            String cityName = editCityInput.getText().toString().trim();
+
+            if (cityName.isEmpty()) {
+                Toast.makeText(WeatherDashboardActivity.this, "Please enter a city", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Mock 7-day forecast
+            List<Entry> entries = new ArrayList<>();
+            for (int i = 0; i < 7; i++) {
+                entries.add(new Entry(i, (float) (15 + Math.random() * 10)));
+            }
+
+            LineDataSet dataSet = new LineDataSet(entries, cityName + " (°C)");
+            dataSet.setColor((int) (Math.random() * 0xFFFFFF) | 0xFF000000);
+            dataSet.setCircleColor(dataSet.getColor());
+            dataSet.setLineWidth(2f);
+            dataSet.setValueTextSize(10f);
+
+            LineData lineData = lineChart.getData();
+            if (lineData == null) {
+                lineData = new LineData();
+                lineChart.setData(lineData);
+            }
+
+            lineData.addDataSet(dataSet);
+            lineChart.invalidate(); // refresh
         });
     }
 
