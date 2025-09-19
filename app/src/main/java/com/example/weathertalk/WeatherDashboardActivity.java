@@ -4,10 +4,11 @@ import android.app.AlertDialog;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -32,6 +33,7 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,16 +46,10 @@ public class WeatherDashboardActivity extends AppCompatActivity {
     private Button btnLine, btnBar, btnPie, btnAddCity;
     private EditText editCityInput;
 
-    // Dynamic forecast data
-    private float[] city1Temps = new float[7];
-    private float[] city2Temps = new float[7];
-    private int[] city1Wind = new int[7];
-    private int[] city2Wind = new int[7];
-
-    private final String city1Name = "Berlin";
-    private final double city1Lat = 52.52, city1Lon = 13.41;
-    private final String city2Name = "London";
-    private final double city2Lat = 51.5072, city2Lon = -0.1276;
+    // Hold multiple cities
+    private final List<String> cityNames = new ArrayList<>();
+    private final List<float[]> cityTemps = new ArrayList<>();
+    private final List<int[]> cityWinds = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,11 +66,10 @@ public class WeatherDashboardActivity extends AppCompatActivity {
         btnAddCity = findViewById(R.id.btnAddCity);
         editCityInput = findViewById(R.id.editCityInput);
 
-        // Load real forecast for Berlin + London
-        new FetchForecastTask(city1Lat, city1Lon, true).execute();
-        new FetchForecastTask(city2Lat, city2Lon, false).execute();
+        // Default: Berlin & London
+        fetchForecast("Berlin", 52.52, 13.41);
+        fetchForecast("London", 51.5072, -0.1276);
 
-        // Chart switching
         btnLine.setOnClickListener(v -> showChart(lineChart));
         btnBar.setOnClickListener(v -> {
             loadBarData();
@@ -85,54 +80,71 @@ public class WeatherDashboardActivity extends AppCompatActivity {
             showChart(pieChart);
         });
 
-        // ➕ Add City (mock data for now)
         btnAddCity.setOnClickListener(v -> {
             String cityName = editCityInput.getText().toString().trim();
-
             if (cityName.isEmpty()) {
-                Toast.makeText(WeatherDashboardActivity.this, "Please enter a city", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Please enter a city", Toast.LENGTH_SHORT).show();
                 return;
             }
-
-            // Mock 7-day forecast
-            List<Entry> entries = new ArrayList<>();
-            for (int i = 0; i < 7; i++) {
-                entries.add(new Entry(i, (float) (15 + Math.random() * 10)));
-            }
-
-            LineDataSet dataSet = new LineDataSet(entries, cityName + " (°C)");
-            dataSet.setColor((int) (Math.random() * 0xFFFFFF) | 0xFF000000);
-            dataSet.setCircleColor(dataSet.getColor());
-            dataSet.setLineWidth(2f);
-            dataSet.setValueTextSize(10f);
-
-            LineData lineData = lineChart.getData();
-            if (lineData == null) {
-                lineData = new LineData();
-                lineChart.setData(lineData);
-            }
-
-            lineData.addDataSet(dataSet);
-            lineChart.invalidate(); // refresh
+            fetchCityCoordinates(cityName);
         });
     }
 
-    private void showChart(View chartToShow) {
-        lineChart.setVisibility(View.GONE);
-        barChart.setVisibility(View.GONE);
-        pieChart.setVisibility(View.GONE);
-        chartToShow.setVisibility(View.VISIBLE);
+    /** 🌍 Step 1: Geocode city -> get lat/lon */
+    private void fetchCityCoordinates(String cityName) {
+        new AsyncTask<Void, Void, double[]>() {
+            @Override
+            protected double[] doInBackground(Void... voids) {
+                try {
+                    String query = URLEncoder.encode(cityName, "UTF-8");
+                    String urlStr = "https://geocoding-api.open-meteo.com/v1/search?name=" + query + "&count=1";
+                    URL url = new URL(urlStr);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                    StringBuilder response = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) response.append(line);
+                    reader.close();
+
+                    JSONObject obj = new JSONObject(response.toString());
+                    JSONArray results = obj.optJSONArray("results");
+                    if (results != null && results.length() > 0) {
+                        JSONObject city = results.getJSONObject(0);
+                        double lat = city.getDouble("latitude");
+                        double lon = city.getDouble("longitude");
+                        return new double[]{lat, lon};
+                    }
+                } catch (Exception e) {
+                    Log.e("Geocode", "Error", e);
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(double[] coords) {
+                if (coords != null) {
+                    fetchForecast(cityName, coords[0], coords[1]);
+                } else {
+                    Toast.makeText(WeatherDashboardActivity.this, "City not found!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }.execute();
     }
 
-    // Async task for API
-    private class FetchForecastTask extends AsyncTask<Void, Void, String> {
-        private final double lat, lon;
-        private final boolean isCity1;
+    /** 🌦️ Step 2: Fetch forecast */
+    private void fetchForecast(String cityName, double lat, double lon) {
+        new FetchForecastTask(cityName, lat, lon).execute();
+    }
 
-        FetchForecastTask(double lat, double lon, boolean isCity1) {
+    private class FetchForecastTask extends AsyncTask<Void, Void, String> {
+        private final String cityName;
+        private final double lat, lon;
+
+        FetchForecastTask(String cityName, double lat, double lon) {
+            this.cityName = cityName;
             this.lat = lat;
             this.lon = lon;
-            this.isCity1 = isCity1;
         }
 
         @Override
@@ -151,7 +163,7 @@ public class WeatherDashboardActivity extends AppCompatActivity {
                 reader.close();
                 return response.toString();
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e("WeatherAPI", "Error fetching forecast", e);
                 return null;
             }
         }
@@ -162,66 +174,86 @@ public class WeatherDashboardActivity extends AppCompatActivity {
                 try {
                     JSONObject obj = new JSONObject(result);
                     JSONObject daily = obj.getJSONObject("daily");
-                    JSONArray temps = daily.getJSONArray("temperature_2m_max");
-                    JSONArray winds = daily.getJSONArray("windspeed_10m_max");
+                    JSONArray tempsJson = daily.getJSONArray("temperature_2m_max");
+                    JSONArray windsJson = daily.getJSONArray("windspeed_10m_max");
+
+                    float[] temps = new float[7];
+                    int[] winds = new int[7];
 
                     for (int i = 0; i < 7; i++) {
-                        if (isCity1) {
-                            city1Temps[i] = (float) temps.getDouble(i);
-                            city1Wind[i] = (int) winds.getDouble(i);
-                        } else {
-                            city2Temps[i] = (float) temps.getDouble(i);
-                            city2Wind[i] = (int) winds.getDouble(i);
-                        }
+                        temps[i] = (float) tempsJson.getDouble(i);
+                        winds[i] = (int) windsJson.getDouble(i);
                     }
+
+                    cityNames.add(cityName);
+                    cityTemps.add(temps);
+                    cityWinds.add(winds);
+
                     loadLineData();
-                    enableTapListener();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    Log.e("WeatherAPI", "Parse error", e);
                 }
             }
         }
     }
 
+    /** 📈 LineChart */
     private void loadLineData() {
-        List<Entry> entriesCity1 = new ArrayList<>();
-        List<Entry> entriesCity2 = new ArrayList<>();
+        LineData lineData = new LineData();
 
-        for (int i = 0; i < city1Temps.length; i++) {
-            entriesCity1.add(new Entry(i, city1Temps[i]));
-            entriesCity2.add(new Entry(i, city2Temps[i]));
+        for (int c = 0; c < cityNames.size(); c++) {
+            String city = cityNames.get(c);
+            float[] temps = cityTemps.get(c);
+
+            List<Entry> entries = new ArrayList<>();
+            for (int i = 0; i < temps.length; i++) {
+                entries.add(new Entry(i, temps[i]));
+            }
+
+            LineDataSet dataSet = new LineDataSet(entries, city + " (°C)");
+            int color = (int) (Math.random() * 0xFFFFFF) | 0xFF000000;
+            dataSet.setColor(color);
+            dataSet.setCircleColor(color);
+            dataSet.setLineWidth(2f);
+            dataSet.setValueTextSize(10f);
+
+            lineData.addDataSet(dataSet);
         }
 
-        LineDataSet dataSet1 = new LineDataSet(entriesCity1, city1Name + " (°C)");
-        dataSet1.setColor(Color.BLUE);
-        dataSet1.setCircleColor(Color.RED);
-
-        LineDataSet dataSet2 = new LineDataSet(entriesCity2, city2Name + " (°C)");
-        dataSet2.setColor(Color.GREEN);
-        dataSet2.setCircleColor(Color.MAGENTA);
-
-        lineChart.setData(new LineData(dataSet1, dataSet2));
+        lineChart.setData(lineData);
+        lineChart.notifyDataSetChanged();
         lineChart.invalidate();
+
+        enableTapListener();
     }
 
+    /** 📊 BarChart */
     private void loadBarData() {
         List<BarEntry> entries = new ArrayList<>();
-        for (int i = 0; i < city1Temps.length; i++) {
-            entries.add(new BarEntry(i, new float[]{city1Temps[i], city2Temps[i]}));
+
+        for (int i = 0; i < 7; i++) {
+            float[] values = new float[cityNames.size()];
+            for (int c = 0; c < cityTemps.size(); c++) {
+                values[c] = cityTemps.get(c)[i];
+            }
+            entries.add(new BarEntry(i, values));
         }
-        BarDataSet barDataSet = new BarDataSet(entries, "Temps");
-        barDataSet.setColors(new int[]{Color.BLUE, Color.GREEN});
-        barDataSet.setStackLabels(new String[]{city1Name, city2Name});
-        barChart.setData(new BarData(barDataSet));
+
+        BarDataSet dataSet = new BarDataSet(entries, "Temps");
+        dataSet.setColors(Color.BLUE, Color.GREEN, Color.RED, Color.MAGENTA, Color.CYAN);
+        dataSet.setStackLabels(cityNames.toArray(new String[0]));
+        barChart.setData(new BarData(dataSet));
         barChart.invalidate();
     }
 
+    /** 🥧 PieChart */
     private void loadPieData() {
         List<PieEntry> entries = new ArrayList<>();
-        entries.add(new PieEntry(average(city1Temps), city1Name + " Avg"));
-        entries.add(new PieEntry(average(city2Temps), city2Name + " Avg"));
+        for (int c = 0; c < cityNames.size(); c++) {
+            entries.add(new PieEntry(average(cityTemps.get(c)), cityNames.get(c)));
+        }
         PieDataSet dataSet = new PieDataSet(entries, "Avg Temps");
-        dataSet.setColors(new int[]{Color.BLUE, Color.GREEN});
+        dataSet.setColors(Color.BLUE, Color.GREEN, Color.RED, Color.MAGENTA, Color.CYAN);
         pieChart.setData(new PieData(dataSet));
         pieChart.invalidate();
     }
@@ -232,18 +264,27 @@ public class WeatherDashboardActivity extends AppCompatActivity {
         return sum / values.length;
     }
 
+    /** Toggle chart visibility */
+    private void showChart(View chartToShow) {
+        lineChart.setVisibility(View.GONE);
+        barChart.setVisibility(View.GONE);
+        pieChart.setVisibility(View.GONE);
+        chartToShow.setVisibility(View.VISIBLE);
+    }
+
+    /** 📌 Tap listener for details */
     private void enableTapListener() {
         lineChart.setOnChartValueSelectedListener(new OnChartValueSelectedListener() {
             @Override
             public void onValueSelected(Entry e, com.github.mikephil.charting.highlight.Highlight h) {
                 int dayIndex = (int) e.getX();
                 String dataset = lineChart.getLineData().getDataSetByIndex(h.getDataSetIndex()).getLabel();
-                int wind;
+                int wind = 0;
 
-                if (dataset.contains(city1Name)) {
-                    wind = city1Wind[dayIndex];
-                } else {
-                    wind = city2Wind[dayIndex];
+                String cityName = dataset.split(" ")[0];
+                int idx = cityNames.indexOf(cityName);
+                if (idx >= 0) {
+                    wind = cityWinds.get(idx)[dayIndex];
                 }
 
                 new AlertDialog.Builder(WeatherDashboardActivity.this)
