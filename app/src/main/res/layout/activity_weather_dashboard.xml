@@ -33,6 +33,25 @@
             android:layout_marginStart="8dp" />
     </LinearLayout>
 
+    <!-- Charts -->
+    <com.github.mikephil.charting.charts.LineChart
+        android:id="@+id/lineChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:visibility="visible" />
+
+    <com.github.mikephil.charting.charts.BarChart
+        android:id="@+id/barChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:visibility="gone" />
+
+    <com.github.mikephil.charting.charts.PieChart
+        android:id="@+id/pieChart"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:visibility="gone" />
+
     <!-- City input -->
     <LinearLayout
         android:layout_width="match_parent"
@@ -54,26 +73,10 @@
             android:text="➕ Add" />
     </LinearLayout>
 
-    <!-- Charts -->
-    <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/lineChart"
+    <!-- ✅ RecyclerView for dynamic city list -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerCities"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="visible" />
-
-    <com.github.mikephil.charting.charts.BarChart
-        android:id="@+id/barChart"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone" />
-
-    <com.github.mikephil.charting.charts.PieChart
-        android:id="@+id/pieChart"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:visibility="gone" />
-
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"/>
 </LinearLayout>

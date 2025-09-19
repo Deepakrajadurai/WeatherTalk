@@ -3,6 +3,7 @@ package com.example.weathertalk;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -12,56 +13,46 @@ import java.util.List;
 
 public class CityAdapter extends RecyclerView.Adapter<CityAdapter.CityViewHolder> {
 
-    private final List<CityWeather> cityList;
-    private final OnCityLongClickListener longClickListener;
+    private final List<String> cities;
+    private final OnDeleteClickListener listener;
 
-    public interface OnCityLongClickListener {
-        void onCityLongClick(int position);
+    public interface OnDeleteClickListener {
+        void onDelete(int position);
     }
 
-    public CityAdapter(List<CityWeather> cityList, OnCityLongClickListener listener) {
-        this.cityList = cityList;
-        this.longClickListener = listener;
+    public CityAdapter(List<String> cities, OnDeleteClickListener listener) {
+        this.cities = cities;
+        this.listener = listener;
     }
 
     @NonNull
     @Override
     public CityViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_city_weather, parent, false);
-        return new CityViewHolder(v);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_city, parent, false);
+        return new CityViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull CityViewHolder holder, int position) {
-        CityWeather cityWeather = cityList.get(position);
-        holder.txtCityName.setText(cityWeather.getCityName());
-        holder.txtCityWeather.setText(cityWeather.getWeatherInfo());
+        String city = cities.get(position);
+        holder.cityName.setText(city);
+        holder.btnDelete.setOnClickListener(v -> listener.onDelete(position));
     }
 
     @Override
     public int getItemCount() {
-        return cityList.size();
+        return cities.size();
     }
 
-    class CityViewHolder extends RecyclerView.ViewHolder {
-        TextView txtCityName, txtCityWeather;
+    static class CityViewHolder extends RecyclerView.ViewHolder {
+        TextView cityName;
+        ImageButton btnDelete;
 
         CityViewHolder(@NonNull View itemView) {
             super(itemView);
-            txtCityName = itemView.findViewById(R.id.txtCityName);
-            txtCityWeather = itemView.findViewById(R.id.txtCityWeather);
-
-            itemView.setOnLongClickListener(v -> {
-                if (longClickListener != null) {
-                    int pos = getBindingAdapterPosition(); // preferred over deprecated getAdapterPosition()
-                    if (pos != RecyclerView.NO_POSITION) {
-                        longClickListener.onCityLongClick(pos);
-                        return true;
-                    }
-                }
-                return false;
-            });
+            cityName = itemView.findViewById(R.id.textCityName);
+            btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
 }
