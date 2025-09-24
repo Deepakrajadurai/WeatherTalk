@@ -54,7 +54,7 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void onNothingSelected(AdapterView<?> parent) {}
         });
-
+//
         // --- Save threshold changes ---
         seekThreshold.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
