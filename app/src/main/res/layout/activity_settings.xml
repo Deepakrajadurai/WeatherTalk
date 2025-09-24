@@ -1,37 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="center"
-    android:padding="20dp"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:padding="24dp">
 
+    <!-- Shake Threshold Value -->
     <TextView
-        android:id="@+id/txtValue"
+        android:id="@+id/txtThreshold"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Shake Threshold: 5"
         android:textSize="18sp"
-        android:layout_marginBottom="20dp"/>
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"
+        android:textColor="@android:color/black" />
 
+    <!-- Slider for threshold -->
     <SeekBar
         android:id="@+id/seekThreshold"
-        android:layout_width="250dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:max="30"/>
+        android:max="20"
+        android:progress="5" />
+
+    <!-- Snooze Spinner -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Snooze Duration"
+        android:layout_marginTop="24dp"
         android:textStyle="bold"
-        android:layout_marginTop="16dp" />
+        android:textSize="16sp"
+        android:layout_gravity="center_horizontal"/>
 
     <Spinner
         android:id="@+id/spinnerSnooze"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:entries="@array/snooze_options"
-        android:layout_marginBottom="16dp"/>
-
+        android:layout_marginTop="8dp"
+        android:entries="@array/snooze_options" />
 
 </LinearLayout>
