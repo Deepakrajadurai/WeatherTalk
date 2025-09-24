@@ -15,6 +15,13 @@
     <string name="steps_label">Steps: 0</string>
     <string name="compass_desc">Compass Icon</string>
     <string name="step_counter_desc">Step Counter Icon</string>
+    <string name="steps_taken_placeholder">Steps: 0</string>
+    <string name="compass_heading">Compass</string>
+    <string name="compass_image_description">Compass Rose</string>
+    <string name="wind_direction_placeholder">Direction: --°</string>
+    <string name="steps_taken_label">Steps Taken</string>
+    <string name="steps_image_description">Footsteps Icon</string>
+    <string name="compass_unavailable">Compass sensors are unavailable.</string>
     <string-array name="snooze_options">
         <item>30 Minutes</item>
         <item>1 Hour</item>
