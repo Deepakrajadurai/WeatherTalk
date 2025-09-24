@@ -1,6 +1,5 @@
 package com.example.weathertalk;
 
-import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.widget.Button;
@@ -10,19 +9,6 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.github.mikephil.charting.charts.BarChart;
-import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.charts.PieChart;
-import com.github.mikephil.charting.data.BarData;
-import com.github.mikephil.charting.data.BarDataSet;
-import com.github.mikephil.charting.data.BarEntry;
-import com.github.mikephil.charting.data.Entry;
-import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.data.LineDataSet;
-import com.github.mikephil.charting.data.PieData;
-import com.github.mikephil.charting.data.PieDataSet;
-import com.github.mikephil.charting.data.PieEntry;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -36,207 +22,93 @@ import java.util.List;
 
 public class CityListActivity extends AppCompatActivity {
 
-    private LineChart lineChart;
-    private BarChart barChart;
-    private PieChart pieChart;
-
-    private Button btnLine, btnBar, btnPie, btnAddCity;
-    private EditText editCityInput;
-
     private RecyclerView recyclerCities;
     private CityAdapter cityAdapter;
-    private final List<String> cityNames = new ArrayList<>();
-    private final List<float[]> cityTemps = new ArrayList<>();
+    private final List<CityWeather> cityList = new ArrayList<>();
+
+    private EditText editNewCity;
+    private Button btnAddCity;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_weather_dashboard);
-
-        lineChart = findViewById(R.id.lineChart);
-        barChart = findViewById(R.id.barChart);
-        pieChart = findViewById(R.id.pieChart);
-
-        btnLine = findViewById(R.id.btnLine);
-        btnBar = findViewById(R.id.btnBar);
-        btnPie = findViewById(R.id.btnPie);
-        btnAddCity = findViewById(R.id.btnAddCity);
-        editCityInput = findViewById(R.id.editCityInput);
+        setContentView(R.layout.activity_city_list);
 
         recyclerCities = findViewById(R.id.recyclerCities);
+        editNewCity = findViewById(R.id.editNewCity);
+        btnAddCity = findViewById(R.id.btnAddCity);
+
         recyclerCities.setLayoutManager(new LinearLayoutManager(this));
 
-        cityAdapter = new CityAdapter(cityNames, position -> {
-            cityNames.remove(position);
-            cityTemps.remove(position);
+        cityAdapter = new CityAdapter(cityList, position -> {
+            cityList.remove(position);
             cityAdapter.notifyItemRemoved(position);
-            loadLineData();
+            Toast.makeText(this, "City removed", Toast.LENGTH_SHORT).show();
         });
 
         recyclerCities.setAdapter(cityAdapter);
 
-        btnLine.setOnClickListener(v -> showChart(lineChart));
-        btnBar.setOnClickListener(v -> {
-            loadBarData();
-            showChart(barChart);
-        });
-        btnPie.setOnClickListener(v -> {
-            loadPieData();
-            showChart(pieChart);
-        });
-
-        btnAddCity.setOnClickListener(v -> addCity());
-    }
-
-    private void addCity() {
-        String cityName = editCityInput.getText().toString().trim();
-        if (cityName.isEmpty()) {
-            Toast.makeText(this, "Enter a city", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        // Step 1: Geocode city → get lat/lon
-        new GeocodeTask(cityName).execute();
-    }
-
-    private void showChart(android.view.View chartToShow) {
-        lineChart.setVisibility(android.view.View.GONE);
-        barChart.setVisibility(android.view.View.GONE);
-        pieChart.setVisibility(android.view.View.GONE);
-        chartToShow.setVisibility(android.view.View.VISIBLE);
-    }
-
-    private void loadLineData() {
-        List<LineDataSet> dataSets = new ArrayList<>();
-        for (int c = 0; c < cityNames.size(); c++) {
-            List<Entry> entries = new ArrayList<>();
-            float[] temps = cityTemps.get(c);
-            for (int i = 0; i < temps.length; i++) {
-                entries.add(new Entry(i, temps[i]));
+        btnAddCity.setOnClickListener(v -> {
+            String city = editNewCity.getText().toString().trim();
+            if (city.isEmpty()) {
+                Toast.makeText(this, "Enter a city", Toast.LENGTH_SHORT).show();
+                return;
             }
-            LineDataSet dataSet = new LineDataSet(entries, cityNames.get(c));
-            dataSet.setColor(Color.rgb((int)(Math.random()*255),
-                    (int)(Math.random()*255),
-                    (int)(Math.random()*255)));
-            dataSet.setCircleRadius(3f);
-            dataSets.add(dataSet);
-        }
-        lineChart.setData(new LineData(dataSets.toArray(new LineDataSet[0])));
-        lineChart.invalidate();
+            new FetchWeatherTask(city).execute();
+        });
     }
 
-    private void loadBarData() {
-        List<BarEntry> entries = new ArrayList<>();
-        for (int i = 0; i < 7; i++) {
-            float[] values = new float[cityNames.size()];
-            for (int c = 0; c < cityTemps.size(); c++) {
-                values[c] = cityTemps.get(c)[i];
-            }
-            entries.add(new BarEntry(i, values));
-        }
-        BarDataSet barDataSet = new BarDataSet(entries, "Temps");
-        barDataSet.setColors(Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA, Color.CYAN);
-        barChart.setData(new BarData(barDataSet));
-        barChart.invalidate();
-    }
-
-    private void loadPieData() {
-        List<PieEntry> entries = new ArrayList<>();
-        for (int c = 0; c < cityNames.size(); c++) {
-            float sum = 0;
-            for (float t : cityTemps.get(c)) sum += t;
-            entries.add(new PieEntry(sum / 7, cityNames.get(c)));
-        }
-        PieDataSet dataSet = new PieDataSet(entries, "Avg Temps");
-        dataSet.setColors(Color.RED, Color.BLUE, Color.GREEN, Color.MAGENTA, Color.CYAN);
-        pieChart.setData(new PieData(dataSet));
-        pieChart.invalidate();
-    }
-
-    // --------------------
-    // Async Tasks
-    // --------------------
-
-    // Step 1: Geocode city
-    private class GeocodeTask extends AsyncTask<Void, Void, double[]> {
+    // ----------------------
+    // Fetch weather for city
+    // ----------------------
+    private class FetchWeatherTask extends AsyncTask<Void, Void, CityWeather> {
         private final String cityName;
 
-        GeocodeTask(String cityName) {
+        FetchWeatherTask(String cityName) {
             this.cityName = cityName;
         }
 
         @Override
-        protected double[] doInBackground(Void... voids) {
+        protected CityWeather doInBackground(Void... voids) {
             try {
-                String urlStr = "https://geocoding-api.open-meteo.com/v1/search?name=" +
+                // Step 1: Geocode city → lat/lon
+                String geoUrl = "https://geocoding-api.open-meteo.com/v1/search?name=" +
                         cityName + "&count=1";
-                URL url = new URL(urlStr);
+                URL url = new URL(geoUrl);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
                 BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder response = new StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 String line;
-                while ((line = reader.readLine()) != null) response.append(line);
+                while ((line = reader.readLine()) != null) sb.append(line);
                 reader.close();
 
-                JSONObject obj = new JSONObject(response.toString());
-                JSONArray results = obj.getJSONArray("results");
-                if (results.length() > 0) {
-                    JSONObject city = results.getJSONObject(0);
-                    double lat = city.getDouble("latitude");
-                    double lon = city.getDouble("longitude");
-                    return new double[]{lat, lon};
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            return null;
-        }
+                JSONObject geoObj = new JSONObject(sb.toString());
+                JSONArray results = geoObj.getJSONArray("results");
+                if (results.length() == 0) return null;
 
-        @Override
-        protected void onPostExecute(double[] latlon) {
-            if (latlon != null) {
-                new ForecastTask(cityName, latlon[0], latlon[1]).execute();
-            } else {
-                Toast.makeText(CityListActivity.this, "City not found!", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
+                JSONObject city = results.getJSONObject(0);
+                double lat = city.getDouble("latitude");
+                double lon = city.getDouble("longitude");
 
-    // Step 2: Fetch forecast
-    private class ForecastTask extends AsyncTask<Void, Void, float[]> {
-        private final String cityName;
-        private final double lat, lon;
+                // Step 2: Weather API call
+                String weatherUrl = "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
+                        "&longitude=" + lon + "&current_weather=true";
+                URL url2 = new URL(weatherUrl);
+                HttpURLConnection conn2 = (HttpURLConnection) url2.openConnection();
+                BufferedReader reader2 = new BufferedReader(new InputStreamReader(conn2.getInputStream()));
+                StringBuilder sb2 = new StringBuilder();
+                String line2;
+                while ((line2 = reader2.readLine()) != null) sb2.append(line2);
+                reader2.close();
 
-        ForecastTask(String cityName, double lat, double lon) {
-            this.cityName = cityName;
-            this.lat = lat;
-            this.lon = lon;
-        }
+                JSONObject obj = new JSONObject(sb2.toString());
+                JSONObject current = obj.getJSONObject("current_weather");
 
-        @Override
-        protected float[] doInBackground(Void... voids) {
-            try {
-                String urlStr = "https://api.open-meteo.com/v1/forecast?latitude=" + lat +
-                        "&longitude=" + lon +
-                        "&daily=temperature_2m_max&timezone=auto";
-                URL url = new URL(urlStr);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) response.append(line);
-                reader.close();
+                String temp = current.getString("temperature") + "°C";
+                String wind = "Wind: " + current.getString("windspeed") + " km/h";
 
-                JSONObject obj = new JSONObject(response.toString());
-                JSONArray temps = obj.getJSONObject("daily").getJSONArray("temperature_2m_max");
+                return new CityWeather(cityName, temp + ", " + wind);
 
-                float[] forecast = new float[7];
-                for (int i = 0; i < 7; i++) {
-                    forecast[i] = (float) temps.getDouble(i);
-                }
-                return forecast;
             } catch (Exception e) {
                 e.printStackTrace();
                 return null;
@@ -244,15 +116,15 @@ public class CityListActivity extends AppCompatActivity {
         }
 
         @Override
-        protected void onPostExecute(float[] forecast) {
-            if (forecast != null) {
-                cityNames.add(cityName);
-                cityTemps.add(forecast);
-                cityAdapter.notifyItemInserted(cityNames.size() - 1);
-                loadLineData();
-                editCityInput.setText("");
+        protected void onPostExecute(CityWeather result) {
+            if (result != null) {
+                cityList.add(result);
+                cityAdapter.notifyItemInserted(cityList.size() - 1);
+                recyclerCities.scrollToPosition(cityList.size() - 1);
+                editNewCity.setText("");
             } else {
-                Toast.makeText(CityListActivity.this, "City not found!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(CityListActivity.this,
+                        "City not found or API error!", Toast.LENGTH_SHORT).show();
             }
         }
     }

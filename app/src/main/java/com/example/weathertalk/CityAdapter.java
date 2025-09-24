@@ -13,16 +13,16 @@ import java.util.List;
 
 public class CityAdapter extends RecyclerView.Adapter<CityAdapter.CityViewHolder> {
 
-    private final List<String> cities;
-    private final OnDeleteClickListener listener;
+    private final List<CityWeather> cityList;
+    private final OnDeleteClickListener deleteClickListener;
 
     public interface OnDeleteClickListener {
-        void onDelete(int position);
+        void onDeleteClick(int position);
     }
 
-    public CityAdapter(List<String> cities, OnDeleteClickListener listener) {
-        this.cities = cities;
-        this.listener = listener;
+    public CityAdapter(List<CityWeather> cityList, OnDeleteClickListener listener) {
+        this.cityList = cityList;
+        this.deleteClickListener = listener;
     }
 
     @NonNull
@@ -35,23 +35,26 @@ public class CityAdapter extends RecyclerView.Adapter<CityAdapter.CityViewHolder
 
     @Override
     public void onBindViewHolder(@NonNull CityViewHolder holder, int position) {
-        String city = cities.get(position);
-        holder.cityName.setText(city);
-        holder.btnDelete.setOnClickListener(v -> listener.onDelete(position));
+        CityWeather cityWeather = cityList.get(position);
+        holder.txtCityName.setText(cityWeather.getCityName());
+        holder.txtWeatherInfo.setText(cityWeather.getWeatherInfo());
+
+        holder.btnDelete.setOnClickListener(v -> deleteClickListener.onDeleteClick(position));
     }
 
     @Override
     public int getItemCount() {
-        return cities.size();
+        return cityList.size();
     }
 
     static class CityViewHolder extends RecyclerView.ViewHolder {
-        TextView cityName;
+        TextView txtCityName, txtWeatherInfo;
         ImageButton btnDelete;
 
-        CityViewHolder(@NonNull View itemView) {
+        CityViewHolder(View itemView) {
             super(itemView);
-            cityName = itemView.findViewById(R.id.textCityName);
+            txtCityName = itemView.findViewById(R.id.txtCityName);
+            txtWeatherInfo = itemView.findViewById(R.id.txtWeatherInfo);
             btnDelete = itemView.findViewById(R.id.btnDelete);
         }
     }
