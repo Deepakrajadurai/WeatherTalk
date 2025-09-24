@@ -87,5 +87,12 @@
             android:layout_height="wrap_content"
             android:text="Resume Alerts"
             android:visibility="gone" />
+        <Button
+            android:id="@+id/btnSensors"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sensors Dashboard"
+            android:layout_marginTop="12dp" />
+
     </LinearLayout>
 </RelativeLayout>

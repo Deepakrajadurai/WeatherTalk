@@ -50,9 +50,14 @@ public class MainActivity extends AppCompatActivity {
         btnCityList = findViewById(R.id.btnCityList);
         btnDashboard = findViewById(R.id.btnDashboard);
         btnAiAssistant = findViewById(R.id.btnAiAssistant);
+        Button btnSensors = findViewById(R.id.btnSensors);
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
+        btnSensors.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, SensorActivity.class);
+            startActivity(intent);
+        });
         // Get weather by city
         btnGetWeather.setOnClickListener(v -> {
             String city = editCity.getText().toString().trim();

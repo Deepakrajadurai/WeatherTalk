@@ -1,0 +1,39 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:padding="16dp">
+
+    <ImageView
+        android:id="@+id/imgCompass"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:src="@drawable/compass"
+        android:contentDescription="Compass" />
+
+    <ImageView
+        android:id="@+id/imgWindArrow"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/wind_arrow"
+        android:contentDescription="Wind Arrow"
+        android:layout_marginTop="16dp" />
+
+    <TextView
+        android:id="@+id/txtWind"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Wind Dir: --"
+        android:textSize="18sp"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/txtSteps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Steps: --"
+        android:textSize="18sp"
+        android:layout_marginTop="16dp" />
+</LinearLayout>
