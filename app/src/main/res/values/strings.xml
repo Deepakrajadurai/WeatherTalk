@@ -6,7 +6,13 @@
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
-
+    <string name="step_counter_unavailable">Step Counter not available on this device</string>
+    <string name="steps_taken">Steps taken: %1$d</string>
+    <string name="wind_direction">Wind Dir: %.1f°</string>
+    <string name="compass_description">Compass</string>
+    <string name="wind_direction_label">Wind Dir: --</string>
+    <string name="step_counter_description">Step Counter</string>
+    <string name="steps_label">Steps: 0</string>
     <string-array name="snooze_options">
         <item>30 Minutes</item>
         <item>1 Hour</item>
